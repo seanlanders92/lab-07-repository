@@ -17,7 +17,19 @@ app.use(cors());
 
 // get the port from the env
 const PORT = process.env.PORT || 3001;
+app.get('/trails', (request, response) => {
+let {latitude, longitude, search_query, formatted_query} = request.query;
 
+let url = ``;
+
+superagent.get(url)
+  .then(results => {
+    const dataObj = results.body.tails.map(trail => {
+      new Trail(trail);
+    })
+    response.send(dataObj);
+  })
+})
 app.get('/weather', (request, response) => {
   let requestData = request.query;
   let url = `https://api.darksky.net/forecast/${process.env.DARK_SKY_API}/${requestData.latitude},${requestData.longitude}`;
@@ -63,6 +75,19 @@ function Weather(obj) {
   this.forecast = obj.summary;
   this.time = new Date(obj.time * 1000).toDateString();
 
+}
+
+function Trail(obj){
+  this.name = obj.name;
+  this.location = obj.location;
+  this.length = obj.length;
+  this.stars = obj.stars;
+  this.star_votes = obj.starVotes;
+  this.summary = obj.summary;
+  this.trail_url = obj.url;
+  this.conditions = obj.conditionStatus;
+  this.condition_date = obj.conditionDate.slice(0,10);
+  this.condition_time = obj.conditionDate.slice(11,19);
 }
 
 function Error(error, response) {
