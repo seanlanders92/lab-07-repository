@@ -28,3 +28,14 @@ Libraries: Express, Superagent, Node.js, dotenv, cors.
 Anthony H.
 Corey D.
 <!-- Give credit (and a link) to other people or resources that helped you build this application. -->
+
+
+Number and name of feature: #1
+
+Estimate of time needed to complete: 1.5 hours
+
+Start time: 9:30_
+
+Finish time: 10:00
+
+Actual time needed to complete: 30 min.
