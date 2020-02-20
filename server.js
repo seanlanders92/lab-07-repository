@@ -24,16 +24,6 @@ client.on('error', err => console.error(err));
 // get the port from the env
 const PORT = process.env.PORT || 3001;
 
-app.get('/add', (request, response) => {
-
-  let { latitude, longitude, search_query, formatted_query } = request.query;
-
-  let SQL = 'INSERT INTO search (search_query, formatted_query, latitude, longitude) VALUES ($1, $2, $3, $4)';
-
-  let safeValues = [search_query, formatted_query, latitude, longitude];
-
-  client.query(SQL, safeValues)
-})
 
 app.get('/trails', (request, response) => {
   let { latitude, longitude, search_query, formatted_query } = request.query;
@@ -73,13 +63,30 @@ app.get('/location', (request, response) => {
 
   let city = request.query.city;
   let url = `https://us1.locationiq.com/v1/search.php?key=${process.env.LOCATION_IQ_API}&q=${city}&format=json`;
-
+  sqlSearch = 'SELECT * WHERE 
+  
   superagent.get(url)
-    .then(results => {
-      let geoData = results.body;
-      location = new City(city, geoData[0]);
-      response.status(200).send(location);
+  .then(results => {
+    let geoData = results.body;
+    location = new City(city, geoData[0]);
+    response.status(200).send(location);
+    
+    let { latitude, longitude, search_query, formatted_query } = location;
+    let SQL = 'INSERT INTO search (search_query, formatted_query, latitude, longitude) VALUES ($1, $2, $3, $4) RETURNING *';
+    
+    let safeValues = [search_query, formatted_query, latitude, longitude];
+
+      client.query(SQL, safeValues)
+        .then(results => {
+          response.status(200).json(results);
+        })
+        .catch((error) => {
+          Error(error, response);
+        });
     })
+    .catch((error) => {
+      Error(error, response);
+    });
 })
 
 function City(city, obj) {
