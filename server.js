@@ -1,5 +1,9 @@
 'use strict';
 
+const pg = require('pg');
+
+require('dotenv').config();
+
 // brings in the expresss library which is our server
 const express = require('express');
 
@@ -9,26 +13,30 @@ const app = express();
 const superagent = require('superagent');
 
 // lets us go into the .env and get the variables
-require('dotenv').config();
 
 // the policeman - lets the server know that it is OK to give information to the front end
 const cors = require('cors');
 app.use(cors());
 
+const client = new pg.Client(process.env.DATABASE_URL);
+client.on('error', err => console.error(err));
+
 // get the port from the env
 const PORT = process.env.PORT || 3001;
+
+
 app.get('/trails', (request, response) => {
-let {latitude, longitude, search_query, formatted_query} = request.query;
+  let { latitude, longitude, search_query, formatted_query } = request.query;
 
-let url = ``;
+  let url = ``;
 
-superagent.get(url)
-  .then(results => {
-    const dataObj = results.body.tails.map(trail => {
-      new Trail(trail);
+  superagent.get(url)
+    .then(results => {
+      const dataObj = results.body.tails.map(trail => {
+        new Trail(trail);
+      })
+      response.send(dataObj);
     })
-    response.send(dataObj);
-  })
 })
 app.get('/weather', (request, response) => {
   let requestData = request.query;
@@ -39,7 +47,7 @@ app.get('/weather', (request, response) => {
     .then(results => {
       //Creating an array of the weather and returning data to the webpage
       let weatherResults = results.body.daily.data;
-      
+
       let weatherData = weatherResults.map(dayInfo => {
         return new Weather(dayInfo);
       });
@@ -50,18 +58,35 @@ app.get('/weather', (request, response) => {
     });
 })
 
-let location =[];
+let location = [];
 app.get('/location', (request, response) => {
 
   let city = request.query.city;
   let url = `https://us1.locationiq.com/v1/search.php?key=${process.env.LOCATION_IQ_API}&q=${city}&format=json`;
-
+  sqlSearch = 'SELECT * WHERE 
+  
   superagent.get(url)
-    .then(results => {
-      let geoData = results.body;
-      location = new City(city, geoData[0]);
-      response.status(200).send(location);
+  .then(results => {
+    let geoData = results.body;
+    location = new City(city, geoData[0]);
+    response.status(200).send(location);
+    
+    let { latitude, longitude, search_query, formatted_query } = location;
+    let SQL = 'INSERT INTO search (search_query, formatted_query, latitude, longitude) VALUES ($1, $2, $3, $4) RETURNING *';
+    
+    let safeValues = [search_query, formatted_query, latitude, longitude];
+
+      client.query(SQL, safeValues)
+        .then(results => {
+          response.status(200).json(results);
+        })
+        .catch((error) => {
+          Error(error, response);
+        });
     })
+    .catch((error) => {
+      Error(error, response);
+    });
 })
 
 function City(city, obj) {
@@ -77,7 +102,7 @@ function Weather(obj) {
 
 }
 
-function Trail(obj){
+function Trail(obj) {
   this.name = obj.name;
   this.location = obj.location;
   this.length = obj.length;
@@ -86,8 +111,8 @@ function Trail(obj){
   this.summary = obj.summary;
   this.trail_url = obj.url;
   this.conditions = obj.conditionStatus;
-  this.condition_date = obj.conditionDate.slice(0,10);
-  this.condition_time = obj.conditionDate.slice(11,19);
+  this.condition_date = obj.conditionDate.slice(0, 10);
+  this.condition_time = obj.conditionDate.slice(11, 19);
 }
 
 function Error(error, response) {
@@ -95,6 +120,8 @@ function Error(error, response) {
   return response.status(500).send('Oops! Something went wrong! Please try again in 401');
 }
 // turn on the server
-app.listen(PORT, () => {
-  console.log(`listening to ${PORT}`);
-})
+client.connect()
+  .then(
+    app.listen(PORT, () => {
+      console.log(`listening to ${PORT}`);
+    }))
