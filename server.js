@@ -14,6 +14,9 @@ client.on('error', err => console.error(err));
 
 const PORT = process.env.PORT || 3001;
 
+const handleMovies = require('./modules/movies.js');
+
+
 let location = [];
 app.get('/location', (request, response) => {
   
@@ -86,6 +89,8 @@ app.get('/weather', (request, response) => {
       Error(error, response);
     });
 })
+
+app.get('/movies', handleMovies);
 
 function City(city, obj) {
   this.search_query = city;
