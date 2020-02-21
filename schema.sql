@@ -4,8 +4,8 @@ CREATE TABLE search (
     id SERIAL PRIMARY KEY,
     search_query VARCHAR(255),
     formatted_query VARCHAR(255),
-    latitude NUMERIC,
-    longitude NUMERIC
+    latitude NUMERIC(9, 9),
+    longitude NUMERIC(9, 9)
 );
 
 INSERT INTO search (search_query, formatted_query, latitude, longitude) VALUES ('Carrington', 'Beard');
