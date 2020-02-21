@@ -17,16 +17,14 @@ const PORT = process.env.PORT || 3001;
 let location = [];
 app.get('/location', (request, response) => {
   
-  let { latitude, longitude, search_query, formatted_query } = location;
   let city = request.query.city;
   let url = `https://us1.locationiq.com/v1/search.php?key=${process.env.LOCATION_IQ_API}&q=${city}&format=json`;
   let sqlSearch = 'SELECT * FROM search WHERE search_query=$1;';
   let safeValues = [city];
-  let safeValues2 = [search_query, formatted_query, latitude, longitude];
   
   client.query(sqlSearch, safeValues)
   .then(results => {
-    if (results.rows.length > 0) {
+    if (results.rowCount > 0) {
       response.send(results.rows[0])
       
     } else {
@@ -34,6 +32,8 @@ app.get('/location', (request, response) => {
       .then(results => {
         let geoData = results.body;
         location = new City(city, geoData[0]);
+        let { latitude, longitude, search_query, formatted_query } = location;
+        let safeValues2 = [search_query, formatted_query, latitude, longitude];
         
         let SQL = "INSERT INTO search (search_query, formatted_query, latitude, longitude) VALUES ($1, $2, $3, $4) RETURNING *";
         client.query(SQL, safeValues2);
